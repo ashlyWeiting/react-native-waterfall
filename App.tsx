@@ -1,119 +1,99 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * Generated with the TypeScript template
- * https://github.com/react-native-community/react-native-template-typescript
- *
- * @format
- */
+import {observer} from 'mobx-react-lite';
+import React, {useEffect} from 'react';
+import {Image, StyleSheet, Text, View} from 'react-native';
+import WaterfallList from './src/components/atoms/WaterfallList';
+import waterfallStore from './src/stores/waterfallView.store';
+import {ArtworkItem} from './src/types/api/responses/artworksResponse';
+import {vw} from './src/utils/theme';
 
-import React, {type PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+const Column = 2;
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+const App = observer(() => {
+  useEffect(() => {
+    (async () => {
+      await waterfallStore.fetcher();
+    })();
+  }, []);
 
-const Section: React.FC<
-  PropsWithChildren<{
-    title: string;
-  }>
-> = ({children, title}) => {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-};
-
-const App = () => {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const onEndReached = async () => {
+    if (waterfallStore.isFetching || waterfallStore.list.length === 0) {
+      return;
+    }
+    console.log('onEndReached');
+    waterfallStore.fetcher();
   };
 
+  const keyExtractor = (item: ArtworkItem) => {
+    return String(item.id);
+  };
+
+  const getItemHeight = (index: number) => {
+    return waterfallStore.list[index].height;
+  };
+
+  const renderItem = ({item}: {item: ArtworkItem; index: number}) => {
+    const cellWidth = (vw - 50 - Column * 8) / Column;
+    const size = {width: cellWidth, height: item.height};
+    return (
+      <View style={[styles.cellContainer, size]}>
+        <Image
+          source={{uri: item.thumbnail?.lqip, cache: 'force-cache'}}
+          style={[styles.cellImg, size]}
+        />
+        <Text style={styles.cellText}>{item.title}</Text>
+      </View>
+    );
+  };
+
+  const list = waterfallStore.list;
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
+    <View style={styles.container}>
+      <WaterfallList
+        data={list}
+        column={Column}
+        keyExtractor={keyExtractor}
+        onEndReached={onEndReached}
+        renderItem={renderItem}
+        cellWidth={vw / 2 - 20}
+        gap={8}
+        getItemHeight={getItemHeight}
       />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    paddingTop: 80,
+    flex: 1,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  cellContainer: {
+    marginBottom: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
+    backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+
+    elevation: 3,
+    overflow: 'hidden',
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  cellText: {
+    padding: 8,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
   },
-  highlight: {
-    fontWeight: '700',
+  cellImg: {
+    borderTopRightRadius: 8,
+    borderTopLeftRadius: 8,
   },
 });
 
